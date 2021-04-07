@@ -74,21 +74,21 @@ int main(int argc, char **argv) {
                     case 0:
                         seed = atoi(optarg);
                         if (seed < 0) {
-                            printf("seed must be positiv number: %d\n", seed);
+                            printf("seed must be positive number: %d\n", seed);
                             return 1;
                         }
                         break;
           	        case 1:
             	        array_size = atoi(optarg);
                         if (array_size < 1) {
-                            printf("array_size must be positiv number: %d\n", array_size);
+                            printf("array_size must be positive number: %d\n", array_size);
                             return 1;
                         }
                         break;
          	        case 2:
            	            pnum = atoi(optarg);
                         if (pnum < 1) {
-                            printf("pnum must be positiv number: %d\n", pnum);
+                            printf("pnum must be positive number: %d\n", pnum);
                             return 1;
                         }
                         break;
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
                     case 3:
                         timeout = atoi(optarg);
                         if (timeout < 1) {
-                            printf("timeout must be positiv number: %d\n", timeout);
+                            printf("timeout must be positive number: %d\n", timeout);
                             return 1;
                         }
                     case 4:
@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
     gettimeofday(&start_time, NULL);
     
     if (timeout != -1) {
-        printf("\nSet allarm on %d sec\n", timeout);
+        printf("\nWaiting %d sec\n", timeout);
         alarm(timeout);
         signal(SIGALRM, PSIGKILL);
     }
@@ -224,8 +224,7 @@ int main(int argc, char **argv) {
     double elapsed_time = (finish_time.tv_sec - start_time.tv_sec) * 1000.0;
     elapsed_time += (finish_time.tv_usec - start_time.tv_usec) / 1000.0;
 
-    if (with_files) 
-        fclose(fp);
+    if (with_files) fclose(fp);
     free(array);
 
     printf("Min: %d\n", min_max.min);
