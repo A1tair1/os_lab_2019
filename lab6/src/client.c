@@ -12,12 +12,23 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include "same.h"
-
 struct Server {
   char ip[255];
   int port;
 };
+
+uint64_t MultModulo(uint64_t a, uint64_t b, uint64_t mod) {
+  uint64_t result = 0;
+  a = a % mod;
+  while (b > 0) {
+    if (b % 2 == 1)
+      result = (result + a) % mod;
+    a = (a * 2) % mod;
+    b /= 2;
+  }
+
+  return result % mod;
+}
 
 bool ConvertStringToUI64(const char *str, uint64_t *val) {
   char *end = NULL;
@@ -38,6 +49,7 @@ int main(int argc, char **argv) {
   uint64_t k = -1;
   uint64_t mod = -1;
   char servers[255] = {'\0'}; // TODO: explain why 255
+  // 
   int count = 0;
   int* ports = (int*)malloc(sizeof(int));
 
@@ -121,16 +133,12 @@ int main(int argc, char **argv) {
   if (k == -1 || mod == -1 || !strlen(servers)) {
     fprintf(stderr, "Using: %s --k 1000 --mod 5 --servers /path/to/file\n",
             argv[0]);
-    free(ports);
     return 1;
   }
 
   // TODO: for one server here, rewrite with servers from file
-  unsigned int servers_num = k > count ? count : k; // Если серверов больше, чем k, берем кол-во серверов, иначе k
+  unsigned int servers_num = k > count ? count : k;
   struct Server *to = malloc(sizeof(struct Server) * servers_num);
-  // TODO: delete this and parallel work between servers
-  to[0].port = 20001;
-  memcpy(to[0].ip, "127.0.0.1", sizeof("127.0.0.1"));
 
   for (int i = 0; i < servers_num; i++)
   {
@@ -138,7 +146,7 @@ int main(int argc, char **argv) {
       memcpy(to[i].ip, "127.0.0.1", sizeof("127.0.0.1"));
   }
 
-  // Коэффициент для распределения по серверам
+    // Коэффициент для распределения по серверам
     int end_count;
     if (servers_num >= k)
     {
@@ -158,6 +166,7 @@ int main(int argc, char **argv) {
     int current_begin = 1;
     uint64_t answer = 1;
     bool is_end = false; // Флаг для конца подсчета
+
 
   // TODO: work continiously, rewrite to make parallel
   for (int i = 0; i < servers_num; i++) {
@@ -180,7 +189,8 @@ int main(int argc, char **argv) {
       exit(1);
     }
 
-    if (connect(sck, (struct sockaddr *)&server, sizeof(server)) < 0) {
+    if (connect(sck, (struct sockaddr *)&server, sizeof(server)) < 0) 
+    {
       fprintf(stderr, "Connection failed\n");
       free(ports);
       exit(1);
@@ -190,44 +200,33 @@ int main(int argc, char **argv) {
     // parallel between servers
     uint64_t begin = current_begin;
     uint64_t end = current_begin + end_count <= k ? current_begin + end_count : k;
-    current_begin = end < k ? end + 1 : k;
+    current_begin = end < k ? end + 1 : k;;
 
-    if (!is_end) // Для избежания ситуации, когда сервер вызывается для подсчета того, что уже посчитано
-    {
-        char task[sizeof(uint64_t) * 3];
-        memcpy(task, &begin, sizeof(uint64_t));
-        memcpy(task + sizeof(uint64_t), &end, sizeof(uint64_t));
-        memcpy(task + 2 * sizeof(uint64_t), &mod, sizeof(uint64_t));
+    char task[sizeof(uint64_t) * 3];
+    memcpy(task, &begin, sizeof(uint64_t));
+    memcpy(task + sizeof(uint64_t), &end, sizeof(uint64_t));
+    memcpy(task + 2 * sizeof(uint64_t), &mod, sizeof(uint64_t));
 
-        if (send(sck, task, sizeof(task), 0) < 0) {
-            fprintf(stderr, "Send failed\n");
-            free(ports);
-            exit(1);
-        }
-
-        char response[sizeof(uint64_t)];
-        if (recv(sck, response, sizeof(response), 0) < 0) {
-            fprintf(stderr, "Recieve failed\n");
-            free(ports);
-            exit(1);
-        }
-
-        // TODO: from one server
-        // unite results
-        uint64_t current_answer = 0;
-        memcpy(&current_answer, response, sizeof(uint64_t));
-        answer = MultModulo(current_answer, answer, mod);
+    if (send(sck, task, sizeof(task), 0) < 0) {
+      fprintf(stderr, "Send failed\n");
+      exit(1);
     }
 
-    is_end = (end == k);
+    char response[sizeof(uint64_t)];
+    if (recv(sck, response, sizeof(response), 0) < 0) {
+      fprintf(stderr, "Recieve failed\n");
+      exit(1);
+    }
+
+    // TODO: from one server
+    // unite results
+    uint64_t answer = 0;
+    memcpy(&answer, response, sizeof(uint64_t));
+    printf("answer: %llu\n", answer);
 
     close(sck);
   }
-
-  printf("answer: %llu\n", answer);
-
   free(to);
-  free(ports);
 
   return 0;
 }

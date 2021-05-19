@@ -7,7 +7,6 @@
 
 #define COUNT_THREADS 2
 
-int var[COUNT_THREADS];
 pthread_mutex_t mutex[COUNT_THREADS];
 
 void block(int* mutex_number);
